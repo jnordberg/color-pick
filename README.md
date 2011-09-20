@@ -5,9 +5,9 @@ Command line wrapper around OS X built in color picker.
 
 ## usage
 
-`color-pick`
+`colorpick`
 
-`color-pick -startColor ffff00`
+`colorpick -startColor ffff00`
 
 Writes color in hex format to stdout
 
