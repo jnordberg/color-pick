@@ -9,12 +9,13 @@
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 
-// NSColorHexadecimalValue from http://developer.apple.com/library/mac/#qa/qa1576/_index.html
+
 @interface NSColor (NSColorHexadecimalValue)
 @end
 
 @implementation NSColor (NSColorHexadecimalValue)
 
+// NSColorHexadecimalValue from http://developer.apple.com/library/mac/#qa/qa1576/_index.html
 -(NSString *)hexValue {
   CGFloat redFloatValue, greenFloatValue, blueFloatValue;
   int redIntValue, greenIntValue, blueIntValue;
@@ -37,17 +38,41 @@
     greenHexValue=[NSString stringWithFormat:@"%02x", greenIntValue];
     blueHexValue=[NSString stringWithFormat:@"%02x", blueIntValue];
 
-    // Concatenate the red, green, and blue components' hex strings together with a "#"
-    return [NSString stringWithFormat:@"#%@%@%@", redHexValue, greenHexValue, blueHexValue];
+    // Concatenate the red, green, and blue components' hex strings together
+    return [NSString stringWithFormat:@"%@%@%@", redHexValue, greenHexValue, blueHexValue];
   }
   return nil;
 }
+
+// color from hex found from http://www.karelia.com/cocoa_legacy/Foundation_Categories/NSColor__Instantiat.m
++ (NSColor *)colorFromHex:(NSString *)inColorString {
+  NSColor *result = nil;
+  unsigned int colorCode = 0;
+  unsigned char redByte, greenByte, blueByte;
+
+  if (nil != inColorString) {
+    NSScanner *scanner = [NSScanner scannerWithString:inColorString];
+    (void) [scanner scanHexInt:&colorCode]; // ignore error
+  }
+  redByte   = (unsigned char) (colorCode >> 16);
+  greenByte = (unsigned char) (colorCode >> 8);
+  blueByte  = (unsigned char) (colorCode);  // masks off high bits
+  result = [NSColor colorWithCalibratedRed:(float)redByte / 0xff
+                                     green:(float)greenByte/ 0xff
+                                      blue:(float)blueByte / 0xff
+                                     alpha:1.0];
+  return result;
+}
+
 @end
 
 @interface Picker : NSApplication <NSWindowDelegate> {
   NSColorPanel *colorPanel;
+  NSColor *startColor;
   BOOL running;
 }
+
+@property (retain) NSColor *startColor;
 
 - (void)show;
 - (void)writeColor;
@@ -55,6 +80,8 @@
 @end
 
 @implementation Picker
+
+@synthesize startColor;
 
 - (void)run {
   // setting up our own runloop since i dont want all the info.plists and whatnot
@@ -96,7 +123,10 @@
   [colorPanel setFloatingPanel:YES];
   [colorPanel setHidesOnDeactivate:NO];
   [colorPanel setShowsAlpha:YES];
+  [colorPanel setMode:NSHSBModeColorPanel];
   [colorPanel setAccessoryView:button];
+  if (self.startColor != nil)
+    [colorPanel setColor:self.startColor];
   [colorPanel makeKeyAndOrderFront:nil];
 }
 
@@ -112,7 +142,12 @@
 
 int main (int argc, const char * argv[]) {
   NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+  NSUserDefaults *args = [NSUserDefaults standardUserDefaults];
   Picker *picker = (Picker *)[Picker sharedApplication];
+
+  NSString *color = [args stringForKey:@"startColor"];
+  if (color != nil)
+    picker.startColor = [NSColor colorFromHex:color];
 
   [picker performSelectorOnMainThread:@selector(run) withObject:nil waitUntilDone:YES];
 
