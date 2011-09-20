@@ -7,9 +7,11 @@ Command line wrapper around OS X built in color picker.
 
 `color-pick`
 
+`color-pick -startColor ffff00`
+
 Writes color in hex format to stdout
 
 ## wishlist
 
  * Different formats (rgb, rgba, hsl)
- * Set starting color
+ * Remember last used colorpicker mode (crayons, colorwheel etc)
