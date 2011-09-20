@@ -1,9 +1,9 @@
 
 color-pick:
-	gcc -Wall -O3 -x objective-c -fobjc-exceptions -framework Foundation -framework AppKit -o color-pick color-pick.m
+	gcc -Wall -O3 -x objective-c -fobjc-exceptions -framework Foundation -framework AppKit -o colorpick colorpick.m
 
 install:
-	cp color-pick /usr/local/bin
+	cp colorpick /usr/local/bin/
 
 clean:
-	rm color-pick
+	rm colorpick
