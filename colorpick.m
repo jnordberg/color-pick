@@ -50,6 +50,17 @@
   unsigned int colorCode = 0;
   unsigned char redByte, greenByte, blueByte;
 
+  if( [inColorString length] == 3 ) {
+    NSString * newColor = [[NSString alloc] initWithFormat:@"%@%@%@%@%@%@", 
+                                    [inColorString substringWithRange: NSMakeRange(0,1)],
+                                    [inColorString substringWithRange: NSMakeRange(0,1)],
+                                    [inColorString substringWithRange: NSMakeRange(1,1)],
+                                    [inColorString substringWithRange: NSMakeRange(1,1)],
+                                    [inColorString substringWithRange: NSMakeRange(2,1)],
+                                    [inColorString substringWithRange: NSMakeRange(2,1)] ];
+    inColorString = newColor;
+  }
+
   if (nil != inColorString) {
     NSScanner *scanner = [NSScanner scannerWithString:inColorString];
     (void) [scanner scanHexInt:&colorCode]; // ignore error
