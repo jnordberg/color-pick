@@ -110,6 +110,10 @@
   running = NO;
 }
 
+- (void)windowWillClose:(NSNotification *)notification {
+    [self terminate];
+}
+
 - (void)show {
   NSButton *button = [[NSButton alloc] initWithFrame:(NSRect){{0, 0}, {120, 40}}];
   [button setButtonType:NSMomentaryPushInButton];
@@ -119,6 +123,7 @@
   button.target = self;
 
   colorPanel = [NSColorPanel sharedColorPanel];
+  [colorPanel setDelegate:self];
   [colorPanel setShowsAlpha:YES];
   [colorPanel setFloatingPanel:YES];
   [colorPanel setHidesOnDeactivate:NO];
