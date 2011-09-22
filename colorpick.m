@@ -50,15 +50,15 @@
   unsigned int colorCode = 0;
   unsigned char redByte, greenByte, blueByte;
 
-  if( [inColorString length] == 3 ) {
-    NSString * newColor = [[NSString alloc] initWithFormat:@"%@%@%@%@%@%@", 
-                                    [inColorString substringWithRange: NSMakeRange(0,1)],
-                                    [inColorString substringWithRange: NSMakeRange(0,1)],
-                                    [inColorString substringWithRange: NSMakeRange(1,1)],
-                                    [inColorString substringWithRange: NSMakeRange(1,1)],
-                                    [inColorString substringWithRange: NSMakeRange(2,1)],
-                                    [inColorString substringWithRange: NSMakeRange(2,1)] ];
-    inColorString = newColor;
+  if ([inColorString length] == 3) {
+    NSString *newColor = [[NSString alloc] initWithFormat:@"%@%@%@%@%@%@",
+      [inColorString substringWithRange: NSMakeRange(0,1)],
+      [inColorString substringWithRange: NSMakeRange(0,1)],
+      [inColorString substringWithRange: NSMakeRange(1,1)],
+      [inColorString substringWithRange: NSMakeRange(1,1)],
+      [inColorString substringWithRange: NSMakeRange(2,1)],
+      [inColorString substringWithRange: NSMakeRange(2,1)]];
+    inColorString = [newColor autorelease];
   }
 
   if (nil != inColorString) {
@@ -122,7 +122,7 @@
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
-    [self terminate];
+  [self terminate];
 }
 
 - (void)show {
