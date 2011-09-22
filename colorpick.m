@@ -78,12 +78,9 @@
 @end
 
 @interface Picker : NSApplication <NSWindowDelegate> {
-  NSColorPanel *colorPanel;
-  NSColor *startColor;
   BOOL running;
+  NSColorPanel *panel;
 }
-
-@property (retain) NSColor *startColor;
 
 - (void)show;
 - (void)writeColor;
@@ -91,8 +88,6 @@
 @end
 
 @implementation Picker
-
-@synthesize startColor;
 
 - (void)run {
   // setting up our own runloop since i dont want all the info.plists and whatnot
@@ -126,31 +121,48 @@
 }
 
 - (void)show {
+  // setup panel and it's accessory view
   NSButton *button = [[NSButton alloc] initWithFrame:(NSRect){{0, 0}, {120, 40}}];
   [button setButtonType:NSMomentaryPushInButton];
   [button setBezelStyle:NSTexturedRoundedBezelStyle];
   button.title = @"Pick!";
   button.action = @selector(writeColor);
   button.target = self;
+  panel = [NSColorPanel sharedColorPanel];
+  [panel setDelegate:self];
+  [panel setShowsAlpha:YES];
+  [panel setFloatingPanel:YES];
+  [panel setHidesOnDeactivate:NO];
+  [panel setShowsAlpha:YES];
+  [panel setAccessoryView:button];
 
-  colorPanel = [NSColorPanel sharedColorPanel];
-  [colorPanel setDelegate:self];
-  [colorPanel setShowsAlpha:YES];
-  [colorPanel setFloatingPanel:YES];
-  [colorPanel setHidesOnDeactivate:NO];
-  [colorPanel setShowsAlpha:YES];
-  [colorPanel setMode:NSHSBModeColorPanel];
-  [colorPanel setAccessoryView:button];
-  if (self.startColor != nil)
-    [colorPanel setColor:self.startColor];
-  [colorPanel makeKeyAndOrderFront:nil];
+  // load user settings
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSString *color = [defaults stringForKey:@"startColor"];
+  if (color != nil) {
+    [panel setColor:[NSColor colorFromHex:color]];
+  }
+  [panel setMode:[defaults integerForKey:@"mode"]]; // will be 0 if not set, wich is NSGrayModeColorPanel
+
+  // show panel
+  [panel makeKeyAndOrderFront:nil];
 }
 
 - (void)writeColor {
+  NSString *hex = [panel.color hexValue];
+
+  // save color and current mode to defaults
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  [defaults setObject:hex forKey:@"startColor"];
+  [defaults setInteger:panel.mode forKey:@"mode"];
+  [defaults synchronize]; // force a save since we are exiting
+
+  // write color to stdout
   NSFileHandle *stdOut = [NSFileHandle fileHandleWithStandardOutput];
-  NSString *hex = [colorPanel.color hexValue];
   [stdOut writeData:[hex dataUsingEncoding:NSASCIIStringEncoding]];
-  [colorPanel close];
+
+  // close panel and exit
+  [panel close];
   [self terminate];
 }
 
@@ -158,12 +170,7 @@
 
 int main (int argc, const char * argv[]) {
   NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-  NSUserDefaults *args = [NSUserDefaults standardUserDefaults];
   Picker *picker = (Picker *)[Picker sharedApplication];
-
-  NSString *color = [args stringForKey:@"startColor"];
-  if (color != nil)
-    picker.startColor = [NSColor colorFromHex:color];
 
   [picker performSelectorOnMainThread:@selector(run) withObject:nil waitUntilDone:YES];
 
