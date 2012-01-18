@@ -77,64 +77,45 @@
 
 @end
 
-@interface Picker : NSApplication <NSWindowDelegate> {
-  BOOL running;
-  NSColorPanel *panel;
+@interface Picker : NSObject <NSApplicationDelegate, NSWindowDelegate> {
+  NSColorPanel *panel; // weak ref
 }
 
 - (void)show;
 - (void)writeColor;
+- (void)exit;
 
 @end
 
 @implementation Picker
 
-- (void)run {
-  // setting up our own runloop since i dont want all the info.plists and whatnot
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
-  running = YES;
-
-  [self show];
-
-  do {
-    [pool release];
-    pool = [[NSAutoreleasePool alloc] init];
-
-    NSEvent *event = [self nextEventMatchingMask:NSAnyEventMask
-                                       untilDate:[NSDate distantFuture]
-                                          inMode:NSDefaultRunLoopMode
-                                         dequeue:YES];
-    [self sendEvent:event];
-    [self updateWindows];
-  } while (running);
-
-  [pool release];
-}
-
-- (void)terminate {
-  running = NO;
-}
-
-- (void)windowWillClose:(NSNotification *)notification {
-  [self terminate];
-}
-
 - (void)show {
-  // setup panel and it's accessory view
-  NSButton *button = [[NSButton alloc] initWithFrame:(NSRect){{0, 0}, {120, 40}}];
+  // setup panel and its accessory view
+
+  NSView *accessoryView = [[NSView alloc] initWithFrame:(NSRect){{0, 0}, {220, 30}}];
+
+  NSButton *button = [[NSButton alloc] initWithFrame:(NSRect){{110, 4}, {110 - 8, 24}}];
   [button setButtonType:NSMomentaryPushInButton];
-  [button setBezelStyle:NSTexturedRoundedBezelStyle];
-  button.title = @"Pick!";
+  [button setBezelStyle:NSRoundedBezelStyle];
+  button.title = @"Pick";
   button.action = @selector(writeColor);
   button.target = self;
+
+  NSButton *cancelButton = [[NSButton alloc] initWithFrame:(NSRect){{8, 4}, {110 - 8, 24}}];
+  [cancelButton setButtonType:NSMomentaryPushInButton];
+  [cancelButton setBezelStyle:NSRoundedBezelStyle];
+  cancelButton.title = @"Cancel";
+  cancelButton.action = @selector(exit);
+  cancelButton.target = self;
+
+  [accessoryView addSubview:[button autorelease]];
+  [accessoryView addSubview:[cancelButton autorelease]];
+
   panel = [NSColorPanel sharedColorPanel];
   [panel setDelegate:self];
-  [panel setShowsAlpha:YES];
-  [panel setFloatingPanel:YES];
-  [panel setHidesOnDeactivate:NO];
-  [panel setShowsAlpha:YES];
-  [panel setAccessoryView:button];
+  [panel setShowsAlpha:NO]; // TODO: support for rgba() output values
+  [panel setAccessoryView:[accessoryView autorelease]];
+  [panel setDefaultButtonCell:[button cell]];
 
   // load user settings
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -145,7 +126,8 @@
   [panel setMode:[defaults integerForKey:@"mode"]]; // will be 0 if not set, wich is NSGrayModeColorPanel
 
   // show panel
-  [panel makeKeyAndOrderFront:nil];
+  [panel makeKeyAndOrderFront:self];
+  //[NSApp runModalForWindow:panel]; // resets panel position
 }
 
 - (void)writeColor {
@@ -161,19 +143,35 @@
   NSFileHandle *stdOut = [NSFileHandle fileHandleWithStandardOutput];
   [stdOut writeData:[hex dataUsingEncoding:NSASCIIStringEncoding]];
 
-  // close panel and exit
+  [self exit];
+}
+
+- (void)exit {
   [panel close];
-  [self terminate];
+}
+
+// panel delegate methods
+
+- (void)windowWillClose:(NSNotification *)notification {
+  [NSApp terminate:self];
+}
+
+// application delegate methods
+
+- (void)applicationDidFinishLaunching:(NSNotification*)aNotification {
+  ProcessSerialNumber psn = {0, kCurrentProcess};
+  TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+  SetFrontProcess(&psn);
+  [self show];
 }
 
 @end
 
 int main (int argc, const char * argv[]) {
   NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-  Picker *picker = (Picker *)[Picker sharedApplication];
-
-  [picker performSelectorOnMainThread:@selector(run) withObject:nil waitUntilDone:YES];
-
+  NSApplication *app = [NSApplication sharedApplication];
+  app.delegate = [[[Picker alloc] init] autorelease];
+  [app run];
   [pool drain];
   return 0;
 }
